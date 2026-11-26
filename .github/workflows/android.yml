@@ -1,0 +1,44 @@
+name: Android native debug build
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  host-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: C++ and Kotlin JNI regression
+        run: bash scripts/test_host.sh
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Android SDK dependencies
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.0.12077973' 'cmake;3.22.1'
+      - name: Build and verify debug APK (no AI model by default)
+        run: |
+          set -o pipefail
+          bash scripts/build_apk.sh | tee apk-verification.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: adaptive-strength-native-debug-unvalidated
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            apk-verification.txt
+          if-no-files-found: error
