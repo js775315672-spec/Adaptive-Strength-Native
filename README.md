@@ -1,9 +1,7 @@
-# Adaptive Strength Native — P1–P3 DEV
-P0 remains at commit 5a1a5a44367be9dc09713e5ce2d12e9b09fc60ad, app ID com.adaptivestrength.nativeapp. This branch uses a separate app ID com.adaptivestrength.nativeapp.p123 so P0 can remain installed. No source originals or personal videos are published. No INTERNET permission.
-
-- P1: subpixel peak interpolation and reused score buffer; exact integer regression and fractional ground-truth tests. Optional two user-selected background anchors in file mode, correction only if both agree. Translation-only, no rotation/perspective validation.
-- P2: pinned official Pose Landmarker lite version 1 downloaded at CI; independent third-party digest comparison and APK asset digest verification required. CPU inference; real human-pose inference not yet verified.
-- P3: CameraX back camera, bounded latest-frame analysis, one pending UI preview, explicit freeze/touch seed, local pixel-unit VBT, optional pose overlay. Actual camera, frame rates, heat and battery use untested. Camera frames are not stored or transmitted.
-- File analysis: original P0 pipeline, physical scale by two-point diameter, JSON export; experimental.
-- Debug signing, no production or medical approval, no automatic load increase. Live mode has no calibrated scale or export yet.
-- Build: JDK 17, Gradle 8.9, Android 35, NDK 27.0.12077973, CMake 3.22.1. CI first runs host regression then builds and checks APK and embedded model.
+# Adaptive Strength Native P4567 DEV
+Based on P123 ae94d4b5e8191460dff005c00c960322cbc03ae7; separate Android applicationId so prior apps remain installed.
+P4: optional two-stationary-anchor inverse rigid translation/rotation (up to 15 degrees); rejects weak, unsynchronized, degenerate, zoom-like anchors. Underlying NCC is translation-template based, not rotation-invariant; real motion, perspective, occlusion and optical-flow fallback remain unvalidated/unimplemented.
+P5: stack candidate array, squared distance, live AI interval >=200 ms, same-runner baseline regression comparison. No GPU/NEON or measured mobile speed claim.
+P6: confidence-filtered 2D image-plane joint angle ranges and simultaneous knee-angle difference. At least three valid frames; not a clinical/anatomical assessment. Existing VBT rep speed/loss retained.
+P7: last 24 completed ascent candidate chart, explicit local summary history (50 newest, app-private, no video/landmarks), original JSON export retained.
+Offline model pinned to existing official URL and independent reference digest. CI gates host regression, same-runner comparison, APK lint/build/signature/archive and model SHA. No INTERNET permission or automatic approval. No main merge. Real camera, AI inference and exercise videos require actual device validation.
