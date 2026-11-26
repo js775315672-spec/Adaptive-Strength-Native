@@ -52,3 +52,27 @@ object RigidBackground {
   return RigidCorrection((ax+bx)/2,(ay+by)/2,(a.x+b.x)/2,(a.y+b.y)/2,cos(angle),sin(angle))
  }
 }
+
+/** Descriptive 2D image-plane angles, not anatomical 3D measurements or diagnosis. */
+data class AngleRange(val count:Int,val min:Double,val max:Double,val rom:Double)
+class PoseMetrics {
+ private data class Acc(var n:Int=0,var lo:Double=180.0,var hi:Double=0.0){
+  fun add(v:Double){n++;lo=min(lo,v);hi=max(hi,v)}
+  fun result():AngleRange?=if(n>=3)AngleRange(n,lo,hi,hi-lo) else null
+ }
+ private val names=listOf("left_knee","right_knee","left_hip","right_hip","left_elbow","right_elbow")
+ private val stats=names.associateWith{Acc()}
+ private val paired=Acc()
+ private var last=-1L
+ var frames=0;private set
+ fun add(us:Long,angles:Map<String,Double?>){
+  if(us<0||us<=last)return
+  last=us;frames++
+  fun good(v:Double?)=v!=null&&v.isFinite()&&v in 0.0..180.0
+  for(k in names){val v=angles[k];if(good(v))stats.getValue(k).add(v!!)}
+  val l=angles["left_knee"];val r=angles["right_knee"]
+  if(good(l)&&good(r))paired.add(abs(l!!-r!!))
+ }
+ fun ranges():Map<String,AngleRange> = stats.mapNotNull{(k,v)->v.result()?.let{k to it}}.toMap()
+ fun kneeDifference():AngleRange?=paired.result()
+}
