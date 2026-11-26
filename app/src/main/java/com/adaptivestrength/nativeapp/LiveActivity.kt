@@ -31,7 +31,7 @@ class LiveActivity:ComponentActivity(){
  private var provider:ProcessCameraProvider?=null
  private var analyzer:ImageAnalysis?=null
  private var vision:Vision?=null;private var tracker:NativeTracker?=null;private var pose:Pose?=null
- private var poseFailed=false;private var poseError="";private var misses=0;private var segment=0;private var lastUs=-1L;private var lastUi=0L
+ private var poseFailed=false;private var poseError="";private var misses=0;private var segment=0;private var lastUs=-1L;private var lastUi=0L;private var lastPoseUs=-1L
  private val rows=ArrayDeque<Sample>();private var latest:Frame?=null;private var shownPath=listOf<Sample>();private var joints=listOf<Joint>()
  private lateinit var view:Preview;private lateinit var status:TextView
  private val paint=Paint(3);private var rect=RectF()
@@ -88,9 +88,9 @@ class LiveActivity:ComponentActivity(){
    if(now-lastUi>=125&&posting.compareAndSet(false,true)){
     try{
      lastUi=now
-     if(!wantPose){pose?.close();pose=null;poseFailed=false;poseError=""}
+     if(!wantPose){pose?.close();pose=null;poseFailed=false;poseError="";lastPoseUs=-1}
      var ls=listOf<Joint>()
-     if(wantPose&&!poseFailed){try{val model=pose?:Pose(this).also{pose=it};ls=model.detect(b,us)}catch(e:Throwable){poseFailed=true;poseError=e.message?:"모델 실패";pose?.close();pose=null}}
+     if(wantPose&&!poseFailed&&(lastPoseUs<0||us-lastPoseUs>=200000)){try{val model=pose?:Pose(this).also{pose=it};ls=model.detect(b,us);lastPoseUs=us}catch(e:Throwable){ls=emptyList();poseCache=emptyList();poseFailed=true;poseError=e.message?:"모델 실패";pose?.close();pose=null}}
      val path=rows.toList();val sum=Vbt.analyze(path,null);val tracking=tracker!=null;val error=poseError
      handed=true
      runOnUiThread{
@@ -103,7 +103,7 @@ class LiveActivity:ComponentActivity(){
  }
  private fun stopCamera(){
   active=false;frozen=false;pending.set(null);analyzer?.clearAnalyzer();analyzer=null;provider?.unbindAll();provider=null
-  if(!executor.isShutdown)executor.execute{tracker?.close();tracker=null;pose?.close();pose=null;vision?.close();vision=null;rows.clear();misses=0;segment=0;lastUs=-1;poseFailed=false;poseError=""}
+  if(!executor.isShutdown)executor.execute{tracker?.close();tracker=null;pose?.close();pose=null;vision?.close();vision=null;rows.clear();misses=0;segment=0;lastUs=-1;lastPoseUs=-1;poseCache=emptyList();poseFailed=false;poseError=""}
   latest=null;shownPath=emptyList();joints=emptyList();view.invalidate();status.text="카메라 정지"
  }
  override fun onStop(){stopCamera();super.onStop()}
