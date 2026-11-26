@@ -90,7 +90,7 @@ class LiveActivity:ComponentActivity(){
      lastUi=now
      if(!wantPose){pose?.close();pose=null;poseFailed=false;poseError="";lastPoseUs=-1}
      var ls=listOf<Joint>()
-     if(wantPose&&!poseFailed&&(lastPoseUs<0||us-lastPoseUs>=200000)){try{val model=pose?:Pose(this).also{pose=it};ls=model.detect(b,us);lastPoseUs=us}catch(e:Throwable){ls=emptyList();poseCache=emptyList();poseFailed=true;poseError=e.message?:"모델 실패";pose?.close();pose=null}}
+     if(wantPose&&!poseFailed&&(lastPoseUs<0||us-lastPoseUs>=200000)){try{val model=pose?:Pose(this).also{pose=it};ls=model.detect(b,us);lastPoseUs=us}catch(e:Throwable){ls=emptyList();poseFailed=true;poseError=e.message?:"모델 실패";pose?.close();pose=null}}
      val path=rows.toList();val sum=Vbt.analyze(path,null);val tracking=tracker!=null;val error=poseError
      handed=true
      runOnUiThread{
@@ -103,7 +103,7 @@ class LiveActivity:ComponentActivity(){
  }
  private fun stopCamera(){
   active=false;frozen=false;pending.set(null);analyzer?.clearAnalyzer();analyzer=null;provider?.unbindAll();provider=null
-  if(!executor.isShutdown)executor.execute{tracker?.close();tracker=null;pose?.close();pose=null;vision?.close();vision=null;rows.clear();misses=0;segment=0;lastUs=-1;lastPoseUs=-1;poseCache=emptyList();poseFailed=false;poseError=""}
+  if(!executor.isShutdown)executor.execute{tracker?.close();tracker=null;pose?.close();pose=null;vision?.close();vision=null;rows.clear();misses=0;segment=0;lastUs=-1;lastPoseUs=-1;poseFailed=false;poseError=""}
   latest=null;shownPath=emptyList();joints=emptyList();view.invalidate();status.text="카메라 정지"
  }
  override fun onStop(){stopCamera();super.onStop()}
