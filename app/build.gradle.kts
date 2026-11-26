@@ -4,8 +4,8 @@ android {
     compileSdk = 35
     ndkVersion = "27.0.12077973"
     defaultConfig {
-        applicationId = "com.adaptivestrength.nativeapp"
-        minSdk = 26; targetSdk = 35; versionCode = 1; versionName = "0.1.0-dev"
+        applicationId = "com.adaptivestrength.nativeapp.p123"
+        minSdk = 26; targetSdk = 35; versionCode = 2; versionName = "0.2.0-dev"
         ndk { abiFilters += listOf("arm64-v8a") }
         externalNativeBuild { cmake { cppFlags += listOf("-std=c++17", "-O3") } }
     }
@@ -16,6 +16,9 @@ android {
 }
 dependencies {
     implementation(project(":core"))
+    implementation("androidx.activity:activity-ktx:1.9.3")
+    implementation("androidx.camera:camera-camera2:1.4.2")
+    implementation("androidx.camera:camera-lifecycle:1.4.2")
     implementation("org.opencv:opencv:4.10.0")
     implementation("com.google.mediapipe:tasks-vision:0.10.21")
 }

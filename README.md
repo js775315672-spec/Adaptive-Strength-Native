@@ -1,11 +1,9 @@
-# Adaptive Strength Native — P0 DEV
+# Adaptive Strength Native — P1–P3 DEV
+P0 remains at commit 5a1a5a44367be9dc09713e5ce2d12e9b09fc60ad, app ID com.adaptivestrength.nativeapp. This branch uses a separate app ID com.adaptivestrength.nativeapp.p123 so P0 can remain installed. No source originals or personal videos are published. No INTERNET permission.
 
-Experimental offline Android video analysis. Kotlin native views, MediaCodec presentation timestamps, C++ multi-feature normalized correlation tracker via JNI, OpenCV circle candidates, optional MediaPipe Pose Landmarker. Manual plate center and two-point calibration. JSON export. Time-weighted ascent velocity and gap exclusion. No automatic load increase or learning approval.
-
-This is an unvalidated developer build for arm64-v8a (Android 8+). The model is not bundled; pose inference requires an independently verified pose_landmarker_lite.task. CameraX, stabilization, rotation-aware plate tracking and real-device accuracy tests remain future work. No INTERNET permission. No personal videos or original HTML files are published; original hashes are recorded in reference/SHA256SUMS and source originals remain in the local P0 package.
-
-## Build
-JDK 17, Gradle 8.9, Android SDK 35, build-tools 35.0.0, NDK 27.0.12077973, CMake 3.22.1. Run bash scripts/build_apk.sh. CI builds and verifies a debug APK, not a validated release.
-
-## Tests
-Run bash scripts/test_host.sh (requires g++, JDK 17, kotlinc). The CI host test job and APK build job are separate. This does not validate Android runtime behavior. No automatic merge.
+- P1: subpixel peak interpolation and reused score buffer; exact integer regression and fractional ground-truth tests. Translation-only, no rotation/perspective validation.
+- P2: pinned official Pose Landmarker lite version 1 downloaded at CI; independent third-party digest comparison and APK asset digest verification required. CPU inference; real human-pose inference not yet verified.
+- P3: CameraX back camera, bounded latest-frame analysis, one pending UI preview, explicit freeze/touch seed, local pixel-unit VBT, optional pose overlay. Actual camera, frame rates, heat and battery use untested. Camera frames are not stored or transmitted.
+- File analysis: original P0 pipeline, physical scale by two-point diameter, JSON export; experimental.
+- Debug signing, no production or medical approval, no automatic load increase. Live mode has no calibrated scale or export yet.
+- Build: JDK 17, Gradle 8.9, Android 35, NDK 27.0.12077973, CMake 3.22.1. CI first runs host regression then builds and checks APK and embedded model.
