@@ -63,7 +63,7 @@ class LiveActivity:ComponentActivity(){
    }catch(e:Exception){stopCamera();status.text="카메라 연결 실패: ${e.message}"}
   },ContextCompat.getMainExecutor(this))
  }
- @androidx.camera.core.ExperimentalGetImage
+ @androidx.annotation.OptIn(markerClass = [androidx.camera.core.ExperimentalGetImage::class])
  private fun process(image:ImageProxy){
   var bitmap:Bitmap?=null;var handed=false
   try{

@@ -20,5 +20,12 @@ fun main(){
  ck(runCatching{Vbt.analyze(cycle,0.0)}.isFailure,"invalid scale rejected")
  val w=120;val h=120;val random=java.util.Random(42);val f=ByteArray(w*h);random.nextBytes(f);val b=ByteArray(w*h);for(y in 0 until h)for(x in 0 until w)if(x>=3&&y>=4)b[y*w+x]=f[(y-4)*w+x-3]
  NativeTracker().use{t->ck(t.seed(f,w,h,60,60,24),"JNI seed");val q=t.step(b,w,h);ck(q!=null&&abs(q[0]-63)<.01&&abs(q[1]-64)<.01,"JNI known displacement");ck(t.step(ByteArray(3),w,h)==null,"JNI buffer length rejection")}
+ val g1=Sample(100,104.0,97.0,.95,0);val g2=Sample(100,204.0,197.0,.9,0)
+ val shift=MotionCorrection.shift(g1,g2,100.0,100.0,200.0,200.0)
+ ck(shift!=null&&eq(shift.first,4.0)&&eq(shift.second,-3.0),"two-anchor translation correction")
+ ck(MotionCorrection.shift(g1,g2.copy(x=210.0),100.0,100.0,200.0,200.0)==null,"disagreeing background rejected")
+ ck(MotionCorrection.shift(g1,g2.copy(confidence=.5),100.0,100.0,200.0,200.0)==null,"weak background rejected")
+ ck(MotionCorrection.shift(g1,g2.copy(us=101),100.0,100.0,200.0,200.0)==null,"unsynchronized anchors rejected")
+ ck(MotionCorrection.shift(g1,g2,Double.NaN,100.0,200.0,200.0)==null,"invalid anchor rejected")
  println("KOTLIN_JNI_PASS=$checks")
 }

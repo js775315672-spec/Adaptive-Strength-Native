@@ -25,3 +25,12 @@ object Vbt {
  }
  fun angle(ax:Double,ay:Double,bx:Double,by:Double,cx:Double,cy:Double):Double?{val x=ax-bx;val y=ay-by;val u=cx-bx;val v=cy-by;val n=hypot(x,y)*hypot(u,v);return if(n>1e-9&&n.isFinite()) acos(((x*u+y*v)/n).coerceIn(-1.0,1.0))*180/PI else null}
 }
+
+/** Two user-confirmed static background anchors. Reject disagreement rather than invent motion. */
+object MotionCorrection {
+ fun shift(a:Sample,b:Sample,ax:Double,ay:Double,bx:Double,by:Double,tolerance:Double=2.5):Pair<Double,Double>? {
+  if(!listOf(a.x,a.y,b.x,b.y,ax,ay,bx,by,tolerance).all{it.isFinite()}||tolerance<0||a.confidence !in .78..1.001||b.confidence !in .78..1.001||a.us!=b.us)return null
+  val dx=a.x-ax;val dy=a.y-ay;val ex=b.x-bx;val ey=b.y-by
+  return if(hypot(dx-ex,dy-ey)<=tolerance)(dx+ex)/2 to (dy+ey)/2 else null
+ }
+}
