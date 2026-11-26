@@ -12,8 +12,8 @@ import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import kotlin.math.roundToInt
 class Vision:AutoCloseable {
- private val rgba=Mat();private val gray=Mat();private val smooth=Mat();private val circles=Mat()
- fun grayscale(b:Bitmap):ByteArray{Utils.bitmapToMat(b,rgba);Imgproc.cvtColor(rgba,gray,Imgproc.COLOR_RGBA2GRAY);return ByteArray(b.width*b.height).also{gray.get(0,0,it)}}
+ private var buffer=ByteArray(0);private val rgba=Mat();private val gray=Mat();private val smooth=Mat();private val circles=Mat()
+ fun grayscale(b:Bitmap):ByteArray{Utils.bitmapToMat(b,rgba);Imgproc.cvtColor(rgba,gray,Imgproc.COLOR_RGBA2GRAY);val n=b.width*b.height;if(buffer.size!=n)buffer=ByteArray(n);gray.get(0,0,buffer);return buffer}
  fun candidates(b:Bitmap):List<Circle>{grayscale(b);Imgproc.GaussianBlur(gray,smooth,Size(5.0,5.0),1.5);Imgproc.HoughCircles(smooth,circles,Imgproc.HOUGH_GRADIENT,1.2,24.0,100.0,35.0,8,minOf(b.width,b.height)/3);return (0 until minOf(circles.cols(),8)).mapNotNull{val q=circles.get(0,it);if(q==null||q.size<3)null else Circle(q[0].roundToInt(),q[1].roundToInt(),q[2].roundToInt())}}
  override fun close(){rgba.release();gray.release();smooth.release();circles.release()}
  companion object {fun initialize()=OpenCVLoader.initLocal()}

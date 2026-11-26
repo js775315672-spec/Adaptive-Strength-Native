@@ -18,6 +18,7 @@ jobs:
       - name: C++ and Kotlin JNI regression
         run: bash scripts/test_host.sh
   build:
+    needs: host-tests
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -33,13 +34,16 @@ jobs:
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
       - name: Android SDK dependencies
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.0.12077973' 'cmake;3.22.1'
-      - name: Build and verify debug APK (no AI model by default)
+      - name: Download pinned offline pose model
+        run: bash scripts/fetch_pose_model.sh
+      - name: Build and verify debug APK with offline model
         run: |
           set -o pipefail
+          export POSE_MODEL_SHA256=59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a
           bash scripts/build_apk.sh | tee apk-verification.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: adaptive-strength-native-debug-unvalidated
+          name: adaptive-strength-native-p123-debug-unvalidated
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             apk-verification.txt

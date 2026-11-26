@@ -21,12 +21,12 @@ class MainActivity:Activity(){
   fun text(s:String,size:Float=16f)=TextView(this).apply{text=s;textSize=size;setTextColor(Color.WHITE);root.addView(this)}
   fun button(s:String,fn:()->Unit)=Button(this).apply{text=s;setOnClickListener{fn()};root.addView(this)}
   fun number(label:String,value:String):EditText{text(label);return EditText(this).apply{setText(value);inputType=android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL;setTextColor(Color.WHITE);root.addView(this)}}
-  text("Adaptive Strength Native · P0 DEV",24f);text("기기 내 파일 분석 · 실제 기기 미검증 · 자동 중량 증가 금지")
+  text("Adaptive Strength Native · P123 DEV",24f);text("기기 내 파일 분석 · 실제 기기 미검증 · 자동 중량 증가 금지")
   status=text("영상 선택 대기");pick=button("영상 파일 선택"){startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="video/*";addCategory(Intent.CATEGORY_OPENABLE)},1)}
   canvas=Stage();root.addView(canvas,LinearLayout.LayoutParams(-1,dp(340)));text("원판 중심 터치 또는 후보 탐색 후 중심 선택")
   radius=number("추적 원판 반지름 (분석 영상 px)","24");diameter=number("실제 원판 지름 (mm)","450");kg=number("바벨 질량 (kg)","0")
   scan=button("OpenCV 원형 후보 찾기"){scan()};calButton=button("원판 지름 양끝 지정 (거리 보정)"){if(frame!=null&&!busy){cal.clear();calibrating=true;status.text="지름의 양끝을 터치하세요";canvas.invalidate()}}
-  poseSwitch=CheckBox(this).apply{text="AI 골격 (모델 내장 필요)";setTextColor(Color.WHITE);root.addView(this)}
+  poseSwitch=CheckBox(this).apply{text="AI 골격 (오프라인 모델)";isChecked=true;setTextColor(Color.WHITE);root.addView(this)}
   run=button("분석 시작"){analyze()};button("분석 중지"){cancel.set(true)};metrics=text("속도 · 반복 · 신뢰도: —",18f);export=button("분석 JSON 저장"){if(report!=null)startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply{type="application/json";putExtra(Intent.EXTRA_TITLE,"adaptive-native.json");addCategory(Intent.CATEGORY_OPENABLE)},2)}
   cvReady=try{Vision.initialize()}catch(e:Throwable){false};if(!cvReady)status.text="OpenCV 초기화 실패: 분석 차단";controls(false)
  }
@@ -48,7 +48,7 @@ class MainActivity:Activity(){
     }}};if(misses>=8)failure="8회 연속 추적 실패: 부분 결과";if(limit)failure="18000 프레임 상한: 부분 결과"
    }catch(e:Throwable){failure=e.message?:"분석 오류"}finally{try{pose?.close()}catch(_:Throwable){}}
    val s=Vbt.analyze(rows,scale,mass);val coverage=if(total==0)0.0 else rows.size.toDouble()/total;val state=if(cancel.get())"USER_STOP" else if(failure!=null)"PARTIAL" else if(total==0)"EMPTY" else "DECODE_COMPLETE_UNVALIDATED"
-   val result=JSONObject().put("schema","ase-native-p0").put("status",state).put("error",failure?:JSONObject.NULL).put("pose_error",poseError?:JSONObject.NULL).put("frames",total).put("coverage",coverage).put("meters_per_analysis_px",scale?:JSONObject.NULL).put("mass_kg",mass).put("unit",s.unit).put("mean_ascent",s.mean?:JSONObject.NULL).put("peak_ascent",s.peak?:JSONObject.NULL).put("min_ascent",s.min?:JSONObject.NULL).put("loss_pct",s.lossPercent?:JSONObject.NULL).put("gravity_power_estimate_w",s.powerEstimate?:JSONObject.NULL).put("learning_approved",false).put("load_increase_allowed",false)
+   val result=JSONObject().put("schema","ase-native-p123").put("status",state).put("error",failure?:JSONObject.NULL).put("pose_error",poseError?:JSONObject.NULL).put("frames",total).put("coverage",coverage).put("meters_per_analysis_px",scale?:JSONObject.NULL).put("mass_kg",mass).put("unit",s.unit).put("mean_ascent",s.mean?:JSONObject.NULL).put("peak_ascent",s.peak?:JSONObject.NULL).put("min_ascent",s.min?:JSONObject.NULL).put("loss_pct",s.lossPercent?:JSONObject.NULL).put("gravity_power_estimate_w",s.powerEstimate?:JSONObject.NULL).put("learning_approved",false).put("load_increase_allowed",false)
    result.put("samples",JSONArray().apply{rows.forEach{put(JSONObject().put("us",it.us).put("x",it.x).put("y",it.y).put("confidence",it.confidence).put("segment",it.segment))}});result.put("reps",JSONArray().apply{s.reps.forEach{put(JSONObject().put("start_us",it.startUs).put("end_us",it.endUs).put("rom",it.rom).put("mean",it.mean).put("peak",it.peak))}});result.put("pose",poseRows)
    fun fmt(v:Double?)=v?.let{String.format(Locale.US,"%.3f",it)}?:"—"
    runOnUiThread{report=result.toString(2);canvas.invalidate();metrics.text="평균 ${fmt(s.mean)} / 최대 ${fmt(s.peak)} / 최소 ${fmt(s.min)} ${s.unit}/s\n완결 상승 후보 ${s.reps.size}회 · 속도 손실 ${fmt(s.lossPercent)}%\n추적 ${(coverage*100).roundToInt()}% · 파워 근사 ${fmt(s.powerEstimate)} W";status.text="$state · ${failure?:"실기기 정확도 미검증 · 재분석은 영상 다시 선택"}${poseError?.let{" · AI: $it"}?:""}";controls(false)}
