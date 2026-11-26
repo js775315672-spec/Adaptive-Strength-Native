@@ -34,3 +34,21 @@ object MotionCorrection {
   return if(hypot(dx-ex,dy-ey)<=tolerance)(dx+ex)/2 to (dy+ey)/2 else null
  }
 }
+
+/** Inverse rigid camera transform from two user-confirmed stationary anchors.
+ * Reject changing separation (zoom/perspective), poor scores, and large rotations.
+ * Two anchors cannot distinguish camera motion from coherent motion of the anchors.
+ */
+data class RigidCorrection(val ax:Double,val ay:Double,val x:Double,val y:Double,val cos:Double,val sin:Double){
+ fun correct(p:Sample):Sample {val dx=p.x-x;val dy=p.y-y;return p.copy(x=ax+cos*dx+sin*dy,y=ay-sin*dx+cos*dy)}
+}
+object RigidBackground {
+ fun fit(a:Sample,b:Sample,ax:Double,ay:Double,bx:Double,by:Double):RigidCorrection?{
+  if(!listOf(a.x,a.y,b.x,b.y,ax,ay,bx,by).all{it.isFinite()}||a.confidence !in .78..1.001||b.confidence !in .78..1.001||a.us!=b.us)return null
+  val dx=bx-ax;val dy=by-ay;val ex=b.x-a.x;val ey=b.y-a.y;val d=hypot(dx,dy);val e=hypot(ex,ey)
+  if(d<24||e<24||abs(e/d-1)>.04)return null
+  val angle=atan2(dx*ey-dy*ex,dx*ex+dy*ey)
+  if(abs(angle)>PI/12)return null
+  return RigidCorrection((ax+bx)/2,(ay+by)/2,(a.x+b.x)/2,(a.y+b.y)/2,cos(angle),sin(angle))
+ }
+}

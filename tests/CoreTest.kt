@@ -27,5 +27,13 @@ fun main(){
  ck(MotionCorrection.shift(g1,g2.copy(confidence=.5),100.0,100.0,200.0,200.0)==null,"weak background rejected")
  ck(MotionCorrection.shift(g1,g2.copy(us=101),100.0,100.0,200.0,200.0)==null,"unsynchronized anchors rejected")
  ck(MotionCorrection.shift(g1,g2,Double.NaN,100.0,200.0,200.0)==null,"invalid anchor rejected")
+ val angle=PI/18;fun transformed(x:Double,y:Double)=Sample(100,cos(angle)*x-sin(angle)*y+15,sin(angle)*x+cos(angle)*y-7,.95,0)
+ val ra=transformed(20.0,30.0);val rb=transformed(120.0,30.0);val fit=RigidBackground.fit(ra,rb,20.0,30.0,120.0,30.0)
+ val fixed=fit?.correct(transformed(70.0,80.0));ck(fixed!=null&&eq(fixed.x,70.0)&&eq(fixed.y,80.0),"rigid correction rotation and translation")
+ ck(RigidBackground.fit(ra,rb.copy(x=rb.x+25),20.0,30.0,120.0,30.0)==null,"zoom rejected")
+ ck(RigidBackground.fit(ra,rb.copy(confidence=.3),20.0,30.0,120.0,30.0)==null,"rigid weak anchor rejected")
+ ck(RigidBackground.fit(ra,rb.copy(us=101),20.0,30.0,120.0,30.0)==null,"rigid timestamp rejected")
+ ck(RigidBackground.fit(ra,rb,20.0,30.0,21.0,30.0)==null,"rigid degenerate anchor rejected")
+ ck(RigidBackground.fit(ra,rb,120.0,30.0,20.0,30.0)==null,"large rotation rejected")
  println("KOTLIN_JNI_PASS=$checks")
 }
