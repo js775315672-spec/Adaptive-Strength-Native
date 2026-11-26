@@ -8,7 +8,7 @@ namespace ase {
 struct Point {float x=0,y=0,q=0; bool valid=false;};
 struct Feature {int dx,dy; std::vector<float> ref;};
 class Tracker {
- int w=0,h=0,miss=0; float x=0,y=0; std::vector<Feature> features;
+ int w=0,h=0,miss=0; float x=0,y=0; std::vector<Feature> features; std::vector<float> scores;
  static constexpr int R=5;
  bool inside(int a,int b) const {return a>=R&&b>=R&&a<w-R&&b<h-R;}
  std::vector<float> patch(const uint8_t* im,int a,int b) const {
@@ -31,13 +31,19 @@ class Tracker {
  Point step(const uint8_t* im,int W,int H){
    if(!im||W!=w||H!=h||features.size()<3||miss>=8)return {};
    int range=std::min(32,12+miss*5),cx=std::lround(x),cy=std::lround(y);
-   struct Candidate{int x,y;float q;};std::vector<Candidate> c; c.reserve(features.size());
-   const int side=2*range+1;std::vector<float> scores(side*side);
+   struct Candidate{float x,y,q;};std::vector<Candidate> c; c.reserve(features.size());
+   const int side=2*range+1;scores.resize(side*side);
    for(const auto& f:features){int bx=0,by=0;float best=-2; // exhaustive integer lattice; no skipped offsets
      for(int j=-range;j<=range;j++)for(int i=-range;i<=range;i++){float q=score(im,cx+f.dx+i,cy+f.dy+j,f.ref);scores[(j+range)*side+i+range]=q;if(q>best){best=q;bx=cx+i;by=cy+j;}}
      if(best<.78f)continue;float second=-2;
      for(int j=-range;j<=range;j++)for(int i=-range;i<=range;i++){int a=cx+i,b=cy+j;if(std::abs(a-bx)<=3&&std::abs(b-by)<=3)continue;second=std::max(second,scores[(j+range)*side+i+range]);}
-     if(best-second>=.035f)c.push_back({bx,by,best});
+     if(best-second>=.035f){
+       // Subpixel quadratic interpolation, only for a well-defined interior peak.
+       auto delta=[](float l,float m,float r){float d=l-2*m+r;return d<-.015f?std::clamp(.5f*(l-r)/d,-.5f,.5f):0.f;};
+       float fx=0,fy=0;int i=bx-cx+range,j=by-cy+range;
+       if(best<.995f&&i>0&&j>0&&i<side-1&&j<side-1){int k=j*side+i;fx=delta(scores[k-1],best,scores[k+1]);fy=delta(scores[k-side],best,scores[k+side]);}
+       c.push_back({bx+fx,by+fy,best});
+     }
    }
    int bestN=0;float bestQ=0,sx=0,sy=0;
    for(auto& a:c){int n=0;float q=0,xx=0,yy=0;for(auto& b:c)if(std::hypot(float(a.x-b.x),float(a.y-b.y))<=2){n++;q+=b.q;xx+=b.x;yy+=b.y;}if(n>bestN||(n==bestN&&q>bestQ)){bestN=n;bestQ=q;sx=xx;sy=yy;}}
