@@ -47,7 +47,7 @@ class LiveActivity:ComponentActivity(){
   button("프레임 고정 · 원판 지정"){if(active&&latest!=null){frozen=true;status.text="고정된 화면의 원판 중심을 터치하세요"}}
   button("카메라 정지"){stopCamera()}
  }
- override fun onRequestPermissionsResult(requestCode:Int,permissions:Array<out String>,grantResults:IntArray){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==7&&grantResults.firstOrNull()==PackageManager.PERMISSION_GRANTED)startCamera() else if(requestCode==7)status.text="카메라 권한 없음"}
+ override fun onRequestPermissionsResult(requestCode:Int,permissions:Array<String>,grantResults:IntArray){super.onRequestPermissionsResult(requestCode,permissions,grantResults);if(requestCode==7&&grantResults.firstOrNull()==PackageManager.PERMISSION_GRANTED)startCamera() else if(requestCode==7)status.text="카메라 권한 없음"}
  @SuppressLint("MissingPermission")
  private fun startCamera(){
   if(active||isFinishing||isDestroyed||checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED)return
