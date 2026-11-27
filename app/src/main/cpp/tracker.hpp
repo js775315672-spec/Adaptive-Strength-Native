@@ -29,16 +29,16 @@ class Tracker {
    for(auto& o:offsets){auto p=patch(im,a+o[0],b+o[1]);if(!p.empty())features.push_back({o[0],o[1],std::move(p)});}
    return features.size()>=3;
  }
- Point step(const uint8_t* im,int W,int H){
-   if(!im||W!=w||H!=h||features.size()<3||miss>=8)return {};
-   int range=std::min(32,12+miss*5),cx=std::lround(x),cy=std::lround(y);
+ private:
+ Point search(const uint8_t* im,int range,bool rescue){
+   int cx=std::lround(x),cy=std::lround(y);
    struct Candidate{float x,y,q;};std::array<Candidate,7> candidates{};size_t count=0;
    const int side=2*range+1;scores.resize(side*side);
    for(const auto& f:features){int bx=0,by=0;float best=-2; // exhaustive integer lattice; no skipped offsets
      for(int j=-range;j<=range;j++)for(int i=-range;i<=range;i++){float q=score(im,cx+f.dx+i,cy+f.dy+j,f.ref);scores[(j+range)*side+i+range]=q;if(q>best){best=q;bx=cx+i;by=cy+j;}}
-     if(best<.78f)continue;float second=-2;
+     if(best<(rescue?.90f:.78f))continue;float second=-2;
      for(int j=-range;j<=range;j++)for(int i=-range;i<=range;i++){int a=cx+i,b=cy+j;if(std::abs(a-bx)<=3&&std::abs(b-by)<=3)continue;second=std::max(second,scores[(j+range)*side+i+range]);}
-     if(best-second>=.035f){
+     if(best-second>=(rescue?.08f:.035f)){
        // Subpixel quadratic interpolation, only for a well-defined interior peak.
        auto delta=[](float l,float m,float r){float d=l-2*m+r;return d<-.015f?std::clamp(.5f*(l-r)/d,-.5f,.5f):0.f;};
        float fx=0,fy=0;int i=bx-cx+range,j=by-cy+range;
@@ -48,8 +48,18 @@ class Tracker {
    }
    int bestN=0;float bestQ=0,sx=0,sy=0;
    for(size_t i=0;i<count;i++){const auto& a=candidates[i];int n=0;float q=0,xx=0,yy=0;for(size_t j=0;j<count;j++){const auto& b=candidates[j];float dx=a.x-b.x,dy=a.y-b.y;if(dx*dx+dy*dy<=4){n++;q+=b.q;xx+=b.x;yy+=b.y;}}if(n>bestN||(n==bestN&&q>bestQ)){bestN=n;bestQ=q;sx=xx;sy=yy;}}
-   if(bestN<3||bestN*2<int(features.size())||!inside(std::lround(sx/std::max(1,bestN)),std::lround(sy/std::max(1,bestN)))){miss++;return {};}
-   x=sx/bestN;y=sy/bestN;miss=0;return {x,y,bestQ/bestN,true};
+   if(bestN<(rescue?5:3)||bestN*2<int(features.size())||!inside(std::lround(sx/std::max(1,bestN)),std::lround(sy/std::max(1,bestN)))){return {};}
+   return {sx/bestN,sy/bestN,bestQ/bestN,true};
+ }
+ public:
+ Point step(const uint8_t* im,int W,int H){
+   if(!im||W!=w||H!=h||features.size()<3||miss>=8)return {};
+   const int range=std::min(32,12+miss*5);
+   auto q=search(im,range,false);
+   // One bounded wide rescue per missing run; fixed seed templates, stricter consensus.
+   if(!q.valid&&miss==0&&features.size()>=5)q=search(im,32,true);
+   if(!q.valid){miss++;return {};}
+   x=q.x;y=q.y;miss=0;return q;
  }
 };
 }
