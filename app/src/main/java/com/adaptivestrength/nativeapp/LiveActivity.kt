@@ -23,7 +23,7 @@ import kotlin.math.*
 class LiveActivity:ComponentActivity(){
  private data class Frame(val b:Bitmap,val us:Long)
  private data class Seed(val frame:Frame,val x:Int,val y:Int)
- private val executor=Executors.newSingleThreadExecutor()
+ private val executor=Executors.newSingleThreadExecutor();private val converter=VideoFrames.FrameConverter()
  private val pending=AtomicReference<Seed?>(null);private val posting=AtomicBoolean(false)
  @Volatile private var frozen=false
  @Volatile private var active=false
@@ -69,7 +69,7 @@ class LiveActivity:ComponentActivity(){
   try{
    if(!active||frozen)return
    val source=image.image?:return
-   val b=VideoFrames.bitmap(source,image.imageInfo.rotationDegrees);bitmap=b
+   val b=converter.bitmap(source,image.imageInfo.rotationDegrees);bitmap=b
    val v=vision?:Vision().also{vision=it};val gray=v.grayscale(b);val us=image.imageInfo.timestamp/1000
    if(us<=lastUs)return
    if(lastUs>=0&&us-lastUs>250000)segment++
