@@ -76,3 +76,22 @@ class PoseMetrics {
  fun ranges():Map<String,AngleRange> = stats.mapNotNull{(k,v)->v.result()?.let{k to it}}.toMap()
  fun kneeDifference():AngleRange?=paired.result()
 }
+
+/** Descriptive personal comparison only. No load prescription or automatic learning approval. */
+data class ProfileSession(val id:String,val exercise:String,val setup:String,val kg:Double,val coverage:Double,val unit:String,val state:String,val reps:Int,val medianRep:Double,val confirmed:Boolean)
+data class ProfileComparison(val count:Int,val baselineMedian:Double,val currentMedian:Double,val changePercent:Double)
+object SpeedProfile {
+ fun median(values:List<Double>):Double? {
+  if(values.isEmpty()||values.any{!it.isFinite()||it<=0})return null
+  val sorted=values.sorted();val n=sorted.size
+  return if(n%2==1)sorted[n/2] else sorted[n/2-1]/2+sorted[n/2]/2
+ }
+ private fun eligible(s:ProfileSession)=s.confirmed&&s.id.isNotBlank()&&s.exercise.isNotBlank()&&s.setup.isNotBlank()&&s.kg.isFinite()&&s.kg>0&&s.coverage in .95..1.0&&s.unit=="m"&&s.state=="DECODE_COMPLETE_UNVALIDATED"&&s.reps>=3&&s.medianRep.isFinite()&&s.medianRep>0
+ fun compare(current:ProfileSession,priorNewestFirst:List<ProfileSession>):ProfileComparison?{
+  if(!eligible(current))return null
+  val matches=priorNewestFirst.asSequence().filter{eligible(it)&&it.id!=current.id&&it.exercise==current.exercise&&it.setup==current.setup&&abs(it.kg-current.kg)<=.05}.distinctBy{it.id}.take(10).map{it.medianRep}.toList()
+  if(matches.size<3)return null
+  val b=median(matches)?:return null;val change=100*(current.medianRep/b-1)
+  return if(change.isFinite())ProfileComparison(matches.size,b,current.medianRep,change) else null
+ }
+}

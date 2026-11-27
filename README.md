@@ -5,3 +5,9 @@ P5: stack candidate array, squared distance, live AI interval >=200 ms, same-run
 P6: confidence-filtered 2D image-plane joint angle ranges and simultaneous knee-angle difference. At least three valid frames; not a clinical/anatomical assessment. Existing VBT rep speed/loss retained.
 P7: last 24 completed ascent candidate chart, explicit local summary history (50 newest, app-private, no video/landmarks), original JSON export retained.
 Offline model pinned to existing official URL and independent reference digest. CI gates host regression, same-runner comparison, APK lint/build/signature/archive and model SHA. No INTERNET permission or automatic approval. No main merge. Real camera, AI inference and exercise videos require actual device validation.
+
+## P8–P10 experimental extension
+Based on P4567 3ffc167e6f2d510941f0ddf767cb95661aa9310a. Separate package com.adaptivestrength.nativeapp.p8910.
+P8: one stricter fixed-template 32px recovery attempt on first miss, minimum five agreeing features, ambiguity margin; no optical flow or rotation-invariant plate tracking yet. Synthetic recovery and baseline regression gate.
+P9: per-decoder/camera-worker ARGB scratch reuse; file preview release. No measured Android FPS or GPU/NEON claim.
+P10: explicit user-confirmed descriptive median rep speed comparison, same exercise, user-defined setup, mass +/-0.05kg, calibrated complete result, coverage >=95%, minimum 3 reps and 3 distinct saved sessions. Re-saving identical analysis ID prevented; re-analysis of same video can still make another ID; user must avoid duplicate recordings. No weight increase, clinical validation or auto learning. Old apps and history preserved separately.

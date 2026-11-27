@@ -7,6 +7,8 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.view.View
 import com.adaptivestrength.core.Rep
+import com.adaptivestrength.core.ProfileSession
+import com.adaptivestrength.core.SpeedProfile
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Locale
@@ -29,14 +31,23 @@ class RepChart(context:Context):View(context){
  */
 object SessionHistory{
  private const val PREF="ase_local_history"
- fun save(a:Activity,report:String){
+ fun save(a:Activity,report:String,confirmed:Boolean):Boolean{
   val r=JSONObject(report);val p=a.getSharedPreferences(PREF,Context.MODE_PRIVATE)
   val old=runCatching{JSONArray(p.getString("rows","[]"))}.getOrDefault(JSONArray())
-  val row=JSONObject().put("saved_at_ms",System.currentTimeMillis())
-  for(key in listOf("status","mass_kg","coverage","unit","mean_ascent","peak_ascent","loss_pct"))row.put(key,r.opt(key)?:JSONObject.NULL)
+  val id=r.optString("session_id");if(id.isBlank()||(0 until old.length()).any{old.optJSONObject(it)?.optString("session_id")==id})return false
+  val row=JSONObject().put("saved_at_ms",System.currentTimeMillis()).put("confirmed",confirmed)
+  for(key in listOf("session_id","exercise","setup","median_rep_speed","status","mass_kg","coverage","unit","mean_ascent","peak_ascent","loss_pct"))row.put(key,r.opt(key)?:JSONObject.NULL)
   row.put("reps",r.optJSONArray("reps")?.length()?:0)
   val list=JSONArray();list.put(row);for(i in 0 until min(49,old.length()))old.optJSONObject(i)?.let{list.put(it)}
-  p.edit().putString("rows",list.toString()).apply()
+  return p.edit().putString("rows",list.toString()).commit()
+ }
+ private fun record(r:JSONObject,confirmed:Boolean,reps:Int)=ProfileSession(r.optString("session_id"),r.optString("exercise"),r.optString("setup"),r.optDouble("mass_kg"),r.optDouble("coverage"),r.optString("unit"),r.optString("status"),reps,r.optDouble("median_rep_speed"),confirmed)
+ fun compare(a:Activity,report:String,confirmed:Boolean){
+  val r=JSONObject(report);val p=a.getSharedPreferences(PREF,Context.MODE_PRIVATE);val rows=runCatching{JSONArray(p.getString("rows","[]"))}.getOrDefault(JSONArray())
+  val prior=(0 until rows.length()).mapNotNull{i->rows.optJSONObject(i)?.let{record(it,it.optBoolean("confirmed"),it.optInt("reps"))}}
+  val result=SpeedProfile.compare(record(r,confirmed,r.optJSONArray("reps")?.length()?:0),prior)
+  val msg=if(result==null)"동일 운동·중량·촬영 조건의 확인된 보정 기록 3개 이상, 각 3회 이상, 추적률 95% 이상 필요. 현재 분석 직접 확인 및 조건 이름 입력 필요." else String.format(Locale.KOREA,"비교 기록 %d개\n기준 반복 중앙값 %.3f m/s\n현재 %.3f m/s\n차이 %+.1f%%\n\n참고용 측정값. 중량 증가 권고 아님.",result.count,result.baselineMedian,result.currentMedian,result.changePercent)
+  AlertDialog.Builder(a).setTitle("개인 속도 비교 · 미검증").setMessage(msg).setPositiveButton("닫기",null).show()
  }
  fun show(a:Activity){
   val p=a.getSharedPreferences(PREF,Context.MODE_PRIVATE);val rows=runCatching{JSONArray(p.getString("rows","[]"))}.getOrDefault(JSONArray())
