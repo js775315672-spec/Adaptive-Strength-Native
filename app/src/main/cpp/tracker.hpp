@@ -17,11 +17,30 @@ class Tracker {
    for(int j=-R;j<=R;j++)for(int i=-R;i<=R;i++){float v=im[(b+j)*w+a+i];p.push_back(v);sum+=v;ss+=v*v;}
    float m=sum/p.size(),n=std::sqrt(std::max(0.f,ss-sum*m)); if(n<100)return {}; for(auto& v:p)v=(v-m)/n;return p;
  }
- float score(const uint8_t* im,int a,int b,const std::vector<float>& p) const {
-   if(!inside(a,b))return -1; float sum=0,ss=0,dot=0;int k=0;
-   for(int j=-R;j<=R;j++)for(int i=-R;i<=R;i++){float v=im[(b+j)*w+a+i];sum+=v;ss+=v*v;dot+=v*p[k++];}
-   float n=ss-sum*sum/k;return n>=10000?dot/std::sqrt(n):-1;
+ // Exact integral sums over the bounded search ROI; at most 135 x 135 pixels.
+ std::vector<uint32_t> integral, squared;
+ int roiX=0,roiY=0,stride=0;
+ void prepare(const uint8_t* im,int cx,int cy,int range){
+   int extent=range+R;for(const auto& f:features)extent=std::max(extent,range+R+std::max(std::abs(f.dx),std::abs(f.dy)));
+   roiX=std::max(0,cx-extent);roiY=std::max(0,cy-extent);
+   int rw=std::min(w,cx+extent+1)-roiX,rh=std::min(h,cy+extent+1)-roiY;stride=rw+1;
+   integral.resize(size_t(stride)*(rh+1));squared.resize(integral.size());
+   std::fill_n(integral.begin(),stride,0u);std::fill_n(squared.begin(),stride,0u);
+   for(int j=0;j<rh;j++){size_t k=size_t(j+1)*stride;integral[k]=squared[k]=0;uint32_t sum=0,ss=0;
+     const auto* row=im+size_t(roiY+j)*w+roiX;
+     for(int i=0;i<rw;i++){uint32_t v=row[i];sum+=v;ss+=v*v;integral[k+i+1]=integral[k+i+1-stride]+sum;squared[k+i+1]=squared[k+i+1-stride]+ss;}}
  }
+ float score(const uint8_t* im,int a,int b,const std::vector<float>& p) const {
+   if(!inside(a,b))return -1;
+   int l=a-R-roiX,t=b-R-roiY;size_t tl=size_t(t)*stride+l,tr=tl+2*R+1,bl=tl+(2*R+1)*stride,br=bl+2*R+1;
+   float sum=float(integral[br]-integral[tr]-integral[bl]+integral[tl]);
+   float ss=float(squared[br]-squared[tr]-squared[bl]+squared[tl]);
+   constexpr int N=(2*R+1)*(2*R+1);float n=ss-sum*sum/N;if(n<10000)return -1;
+   float dot=0;int k=0;
+   for(int j=-R;j<=R;j++){const uint8_t* row=im+size_t(b+j)*w+a-R;for(int i=0;i<=2*R;i++)dot+=float(row[i])*p[k++];}
+   return dot/std::sqrt(n);
+ }
+
  public:
  bool seed(const uint8_t* im,int W,int H,int a,int b,int radius) {
    features.clear();w=W;h=H;miss=0;x=a;y=b;if(!im||W<24||H<24||!inside(a,b)||radius<8)return false;
@@ -33,7 +52,7 @@ class Tracker {
  Point search(const uint8_t* im,int range,bool rescue){
    int cx=std::lround(x),cy=std::lround(y);
    struct Candidate{float x,y,q;};std::array<Candidate,7> candidates{};size_t count=0;
-   const int side=2*range+1;scores.resize(side*side);
+   const int side=2*range+1;scores.resize(side*side);prepare(im,cx,cy,range);
    for(const auto& f:features){int bx=0,by=0;float best=-2; // exhaustive integer lattice; no skipped offsets
      for(int j=-range;j<=range;j++)for(int i=-range;i<=range;i++){float q=score(im,cx+f.dx+i,cy+f.dy+j,f.ref);scores[(j+range)*side+i+range]=q;if(q>best){best=q;bx=cx+i;by=cy+j;}}
      if(best<(rescue?.90f:.78f))continue;float second=-2;

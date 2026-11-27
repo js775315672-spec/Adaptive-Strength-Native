@@ -21,6 +21,8 @@ jobs:
         run: bash scripts/test_host.sh
       - name: P4567 versus P8910 same-runner comparison
         run: bash scripts/compare_tracker.sh
+      - name: P8910 exact output and CPU regression gate
+        run: bash scripts/pony_compare.sh
   build:
     needs: host-tests
     runs-on: ubuntu-24.04
@@ -47,7 +49,7 @@ jobs:
           bash scripts/build_apk.sh | tee apk-verification.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: adaptive-strength-native-p8910-debug-unvalidated
+          name: adaptive-strength-native-pony-p8910-debug-unvalidated
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             apk-verification.txt

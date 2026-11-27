@@ -4,8 +4,8 @@ android {
     compileSdk = 35
     ndkVersion = "27.0.12077973"
     defaultConfig {
-        applicationId = "com.adaptivestrength.nativeapp.p8910"
-        minSdk = 26; targetSdk = 35; versionCode = 4; versionName = "0.4.0-dev"
+        applicationId = "com.adaptivestrength.nativeapp.ponyp8910"
+        minSdk = 26; targetSdk = 35; versionCode = 5; versionName = "0.4.1-pony-dev"
         ndk { abiFilters += listOf("arm64-v8a") }
         externalNativeBuild { cmake { cppFlags += listOf("-std=c++17", "-O3") } }
     }
